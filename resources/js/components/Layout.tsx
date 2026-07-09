@@ -1,99 +1,120 @@
 import { ReactNode } from 'react';
-import { Link, usePage } from '@inertiajs/react';
-import { Head } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 
 interface LayoutProps {
     children: ReactNode;
     title?: string;
 }
 
+interface MenuItem {
+    title: string;
+    initials: string;
+    path: string;
+    children: Array<{ title: string; path: string }>;
+}
+
 export default function Layout({ children, title }: LayoutProps) {
     const { url } = usePage();
-    
-    const menuItems = [
+
+    const menuItems: MenuItem[] = [
         {
-            title: 'Dashboard',
-            icon: '🏠',
+            title: 'Visao Geral',
+            initials: 'VG',
             path: '/dashboard',
-            children: []
+            children: [],
         },
         {
-            title: 'DTI - Departamento de Tecnologia e Informação',
-            icon: '💻',
+            title: 'Recursos Humanos',
+            initials: 'RH',
+            path: '/censo',
+            children: [
+                { title: 'Censo e Controlo de Pessoal', path: '/censo/dashboard' },
+                { title: 'Colaboradores no Censo', path: '/censo/registros' },
+                { title: 'Quadro de Pessoal', path: '/censo/dashboard#quadro' },
+                { title: 'Relatorios Provinciais', path: '/censo/dashboard#relatorios' },
+            ],
+        },
+        {
+            title: 'Tecnologia e Informacao',
+            initials: 'DT',
             path: '/dti',
             children: [
                 { title: 'Dashboard', path: '/dti/dashboard' },
                 { title: 'Candidatura Interna', path: '/dti/candidatura-interna' },
                 { title: 'Projetos', path: '/dti/projetos' },
                 { title: 'Suporte', path: '/dti/suporte' },
-                { title: 'Relatórios', path: '/dti/relatorios' },
-            ]
+                { title: 'Relatorios', path: '/dti/relatorios' },
+            ],
         },
-        {
-            title: 'Censo',
-            icon: '📊',
-            path: '/censo',
-            children: [
-                { title: 'Dashboard', path: '/censo/dashboard' },
-                { title: 'Registros', path: '/censo/registros' },
-            ]
-        }
     ];
 
-    const isActive = (path: string) => {
-        return url === path || url.startsWith(path + '/');
-    };
+    const isActive = (path: string) => url === path || url.startsWith(path.replace(/#.*$/, '') + '/');
 
     return (
         <>
             <Head title={title} />
-            <div className="flex min-h-screen bg-gray-100 dark:bg-gray-900">
-                {/* Sidebar */}
-                <aside className="w-64 bg-white dark:bg-gray-800 shadow-lg flex flex-col">
-                    <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                        <h1 className="text-xl font-bold text-gray-800 dark:text-white">
-                            CSMJ Sistema
-                        </h1>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                            Gestão Integrada
-                        </p>
+            <div className="min-h-screen bg-slate-100 text-slate-950">
+                <aside className="fixed inset-y-0 left-0 z-20 hidden w-72 border-r border-slate-200 bg-white lg:flex lg:flex-col">
+                    <div className="border-b border-slate-200 px-6 py-6">
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-11 w-11 items-center justify-center rounded-md bg-slate-950 text-sm font-bold text-white">
+                                CS
+                            </div>
+                            <div>
+                                <h1 className="text-base font-bold tracking-tight text-slate-950">
+                                    CSMJ
+                                </h1>
+                                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                                    Plataforma Institucional
+                                </p>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <nav className="flex-1 overflow-y-auto p-4">
+
+                    <nav className="flex-1 overflow-y-auto px-4 py-5">
+                        <div className="mb-3 px-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                            Modulos
+                        </div>
                         <ul className="space-y-2">
-                            {menuItems.map((item, index) => (
-                                <li key={index}>
+                            {menuItems.map((item) => (
+                                <li key={item.title}>
                                     {item.children.length === 0 ? (
                                         <Link
                                             href={item.path}
-                                            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                                            className={`flex items-center gap-3 rounded-md px-3 py-3 text-sm font-semibold transition ${
                                                 isActive(item.path)
-                                                    ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
-                                                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                                    ? 'bg-slate-950 text-white'
+                                                    : 'text-slate-700 hover:bg-slate-100'
                                             }`}
                                         >
-                                            <span className="text-xl">{item.icon}</span>
-                                            <span className="font-medium">{item.title}</span>
+                                            <span className="flex h-8 w-8 items-center justify-center rounded-md border border-current/15 text-xs">
+                                                {item.initials}
+                                            </span>
+                                            {item.title}
                                         </Link>
                                     ) : (
                                         <div className="space-y-1">
-                                            <div className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                                                isActive(item.path)
-                                                    ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
-                                                    : 'text-gray-700 dark:text-gray-300'
-                                            }`}>
-                                                <span className="text-xl">{item.icon}</span>
-                                                <span className="font-medium">{item.title}</span>
+                                            <div
+                                                className={`flex items-center gap-3 rounded-md px-3 py-3 text-sm font-semibold ${
+                                                    isActive(item.path)
+                                                        ? 'bg-slate-950 text-white'
+                                                        : 'text-slate-800'
+                                                }`}
+                                            >
+                                                <span className="flex h-8 w-8 items-center justify-center rounded-md border border-current/15 text-xs">
+                                                    {item.initials}
+                                                </span>
+                                                {item.title}
                                             </div>
-                                            <ul className="ml-8 space-y-1">
-                                                {item.children.map((child, childIndex) => (
-                                                    <li key={childIndex}>
+                                            <ul className="ml-11 space-y-1 border-l border-slate-200 pl-3">
+                                                {item.children.map((child) => (
+                                                    <li key={child.path}>
                                                         <Link
                                                             href={child.path}
-                                                            className={`block px-4 py-2 rounded-lg text-sm transition-colors ${
-                                                                isActive(child.path)
-                                                                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                                                                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                                            className={`block rounded-md px-3 py-2 text-sm transition ${
+                                                                url === child.path || url.startsWith(child.path.replace(/#.*$/, ''))
+                                                                    ? 'bg-blue-50 font-semibold text-blue-800'
+                                                                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
                                                             }`}
                                                         >
                                                             {child.title}
@@ -107,25 +128,41 @@ export default function Layout({ children, title }: LayoutProps) {
                             ))}
                         </ul>
                     </nav>
-                    
-                    <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
-                                U
-                            </div>
-                            <div className="flex-1">
-                                <p className="text-sm font-medium text-gray-800 dark:text-white">Usuário</p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">Administrador</p>
-                            </div>
+
+                    <div className="border-t border-slate-200 p-4">
+                        <div className="rounded-md border border-emerald-200 bg-emerald-50 p-4">
+                            <p className="text-xs font-bold uppercase tracking-wide text-emerald-800">
+                                Integridade activa
+                            </p>
+                            <p className="mt-1 text-sm text-emerald-900">
+                                Validacao automatica por provincia e trilha de auditoria habilitada.
+                            </p>
                         </div>
                     </div>
                 </aside>
 
-                {/* Main Content */}
-                <main className="flex-1 overflow-y-auto">
-                    <div className="p-8">
-                        {children}
+                <main className="lg:pl-72">
+                    <div className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 px-5 py-4 backdrop-blur lg:px-8">
+                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                            <div>
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                    Conselho Superior da Magistratura Judicial
+                                </p>
+                                <p className="text-sm font-medium text-slate-800">
+                                    {title ?? 'Gestao Integrada'}
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <span className="rounded-md border border-slate-200 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                                    Ambiente institucional
+                                </span>
+                                <div className="flex h-9 w-9 items-center justify-center rounded-md bg-slate-950 text-xs font-bold text-white">
+                                    AD
+                                </div>
+                            </div>
+                        </div>
                     </div>
+                    <div className="px-5 py-6 lg:px-8 lg:py-8">{children}</div>
                 </main>
             </div>
         </>
