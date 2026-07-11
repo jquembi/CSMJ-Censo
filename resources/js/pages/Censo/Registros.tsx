@@ -16,8 +16,11 @@ interface CensusRecord {
     life_proof_status: boolean;
     province?: Province;
     user?: {
+        id: number;
         name: string;
         email?: string;
+        telefone?: string;
+        status?: string;
         cargo?: string;
         categoria_profissional?: string;
         classe?: string;
@@ -36,7 +39,14 @@ interface PaginatedRecords {
 interface Props {
     provinces: Province[];
     selectedProvinceId?: number;
+    selectedStatus?: string;
+    search?: string;
     records: PaginatedRecords;
+    statusSummary: {
+        ativos: number;
+        inativos: number;
+        sem_estado: number;
+    };
 }
 
 const statusLabels: Record<string, string> = {
@@ -90,9 +100,22 @@ function formatNumber(value?: number) {
     return new Intl.NumberFormat('pt-AO').format(value ?? 0);
 }
 
-export default function CensoRegistros({ provinces, selectedProvinceId, records }: Props) {
-    const changeProvince = (provinceId: string) => {
-        router.get('/censo/registros', provinceId ? { province_id: provinceId } : {}, {
+export default function CensoRegistros({ provinces, selectedProvinceId, selectedStatus, search, records, statusSummary }: Props) {
+    const applyFilters = (params: Record<string, string>) => {
+        const query = {
+            province_id: selectedProvinceId || '',
+            status: selectedStatus || '',
+            q: search || '',
+            ...params,
+        };
+
+        Object.keys(query).forEach((key) => {
+            if (!query[key as keyof typeof query]) {
+                delete query[key as keyof typeof query];
+            }
+        });
+
+        router.get('/censo/registros', query, {
             preserveState: true,
             preserveScroll: true,
         });
@@ -124,9 +147,19 @@ export default function CensoRegistros({ provinces, selectedProvinceId, records 
                         </div>
 
                         <div className="flex flex-col gap-3 sm:flex-row">
+                            <input
+                                defaultValue={search ?? ''}
+                                onKeyDown={(event) => {
+                                    if (event.key === 'Enter') {
+                                        applyFilters({ q: event.currentTarget.value });
+                                    }
+                                }}
+                                placeholder="Pesquisar nome, agente ou cargo"
+                                className="h-11 min-w-72 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 shadow-sm outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
+                            />
                             <select
                                 value={selectedProvinceId ?? ''}
-                                onChange={(event) => changeProvince(event.target.value)}
+                                onChange={(event) => applyFilters({ province_id: event.target.value })}
                                 className="h-11 min-w-72 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 shadow-sm outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
                             >
                                 <option value="">Visao nacional consolidada</option>
@@ -135,6 +168,18 @@ export default function CensoRegistros({ provinces, selectedProvinceId, records 
                                         {province.nome}
                                     </option>
                                 ))}
+                            </select>
+                            <select
+                                value={selectedStatus ?? ''}
+                                onChange={(event) => applyFilters({ status: event.target.value })}
+                                className="h-11 min-w-48 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-800 shadow-sm outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
+                            >
+                                <option value="">Todos estados</option>
+                                <option value="ativo">Activos</option>
+                                <option value="activo">Activos antigo</option>
+                                <option value="inativo">Inactivos</option>
+                                <option value="suspenso">Suspensos</option>
+                                <option value="licenciado">Licenciados</option>
                             </select>
                             <Link
                                 href="/censo/dashboard"
@@ -158,8 +203,16 @@ export default function CensoRegistros({ provinces, selectedProvinceId, records 
                         <p className="mt-2 text-2xl font-bold text-slate-950">{formatNumber(records.total ?? records.data.length)}</p>
                     </div>
                     <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-5">
-                        <p className="text-sm font-semibold text-emerald-800">Integridade da consulta</p>
-                        <p className="mt-2 text-2xl font-bold text-emerald-950">Auditavel</p>
+                        <p className="text-sm font-semibold text-emerald-800">Funcionários activos</p>
+                        <p className="mt-2 text-2xl font-bold text-emerald-950">{formatNumber(statusSummary.ativos)}</p>
+                    </div>
+                    <div className="rounded-lg border border-rose-200 bg-rose-50 p-5">
+                        <p className="text-sm font-semibold text-rose-800">Inactivos / suspensos</p>
+                        <p className="mt-2 text-2xl font-bold text-rose-950">{formatNumber(statusSummary.inativos)}</p>
+                    </div>
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 p-5">
+                        <p className="text-sm font-semibold text-amber-800">Sem estado definido</p>
+                        <p className="mt-2 text-2xl font-bold text-amber-950">{formatNumber(statusSummary.sem_estado)}</p>
                     </div>
                 </section>
 
@@ -187,7 +240,7 @@ export default function CensoRegistros({ provinces, selectedProvinceId, records 
                         <table className="min-w-full divide-y divide-slate-200 text-sm">
                             <thead className="bg-slate-50">
                                 <tr>
-                                    {['Agente', 'Colaborador', 'Provincia', 'Tipo', 'Situacao funcional', 'Estado do censo', 'Prova de vida'].map((header) => (
+                                    {['Agente', 'Colaborador', 'Provincia', 'Tipo', 'Estado actual', 'Estado do censo', 'Prova de vida', ''].map((header) => (
                                         <th key={header} className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
                                             {header}
                                         </th>
@@ -205,6 +258,7 @@ export default function CensoRegistros({ provinces, selectedProvinceId, records 
                                         <td className="px-6 py-4">
                                             <p className="font-bold text-slate-950">{record.user?.name ?? '-'}</p>
                                             <p className="mt-1 text-xs text-slate-500">{record.user?.cargo ?? record.user?.categoria_profissional ?? 'Cargo por confirmar'}</p>
+                                            <p className="mt-1 text-xs text-slate-400">{record.user?.email ?? record.user?.telefone ?? ''}</p>
                                         </td>
                                         <td className="px-6 py-4 font-medium text-slate-700">{record.province?.nome ?? '-'}</td>
                                         <td className="px-6 py-4 text-slate-700">
@@ -212,7 +266,7 @@ export default function CensoRegistros({ provinces, selectedProvinceId, records 
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">
-                                                {functionalLabels[record.functional_status] ?? record.functional_status}
+                                                {functionalLabels[record.user?.status ?? record.functional_status] ?? record.user?.status ?? record.functional_status}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
@@ -224,6 +278,16 @@ export default function CensoRegistros({ provinces, selectedProvinceId, records 
                                             <span className={`rounded-md px-2.5 py-1 text-xs font-bold ${record.life_proof_status ? 'bg-emerald-50 text-emerald-800' : 'bg-amber-50 text-amber-800'}`}>
                                                 {record.life_proof_status ? 'Confirmada' : 'Pendente'}
                                             </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            {record.user?.id && (
+                                                <Link
+                                                    href={`/censo/usuarios/${record.user.id}`}
+                                                    className="font-bold text-blue-700 hover:text-blue-900"
+                                                >
+                                                    Detalhe
+                                                </Link>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}

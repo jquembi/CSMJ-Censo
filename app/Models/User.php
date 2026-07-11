@@ -2,16 +2,22 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-class User extends Model
+class User extends Authenticatable
 {
+    use HasFactory;
+
     protected $fillable = [
         'name',
         'email',
+        'email_verified_at',
+        'password',
+        'remember_token',
         'numero_agente',
         'cargo',
         'telefone',
@@ -25,8 +31,15 @@ class User extends Model
         'data_admissao',
     ];
 
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
     protected $casts = [
         'data_admissao' => 'date',
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
     ];
 
     public function province(): BelongsTo
